@@ -1,0 +1,11 @@
+# Matlab temporary files #
+*.asv
+
+# OS generated files #
+######################
+.DS_Store
+.DS_Store?
+.nii
+._*
+.Spotlight-V100
+.Trashes
