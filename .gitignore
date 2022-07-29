@@ -5,7 +5,8 @@
 ######################
 .DS_Store
 .DS_Store?
-.nii
+*.nii
+*.nii.gz
 ._*
 .Spotlight-V100
 .Trashes
