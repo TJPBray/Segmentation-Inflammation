@@ -2,11 +2,14 @@
 %Written by Tim Bray July 2022
 %t.bray@ucl.ac.uk
 
+clear all 
+
 %% 1. Specify folders 
 
-maskfolderR1 = '/Users/tjb57/Dropbox/MATLAB/Segmentation/inflammationData/nifti/MasksTJPB';
-maskfolderR2 = '/Users/tjb57/Dropbox/MATLAB/Segmentation/inflammationData/nifti/MasksMHC';
-imagefolder = '/Users/tjb57/Dropbox/MATLAB/Segmentation/inflammationData/nifti/STIR images';
+%
+maskfolderR1 = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/nifti/MasksTJPB';
+maskfolderR2 = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/nifti/MasksMHC';
+imagefolder = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/nifti/STIR images';
 
 %Get folder info
 maskfolderR1info=dir(maskfolderR1);
@@ -26,24 +29,33 @@ imageSize = 336;
 %Specify max number of slices
 maxSlices = 25;
 
+%Load dataset info (which are training, test etc)
+load datasetInfo.mat
+
 %% 2. Get masks
 
 %Prefill arrays
-maskStacks = zeros(imageSize,imageSize,maxSlices,numFiles);
-imageStacks = zeros(imageSize,imageSize,maxSlices,numFiles);
+% maskStacks = zeros(imageSize,imageSize,maxSlices,numFiles);
+% imageStacks = zeros(imageSize,imageSize,maxSlices,numFiles);
 
 %2.1 Loop through subjects
 for k=1: numFiles
 
 %2.2 Get filename from parotid folder
-filename=maskfolderR1info(k+d).name;
+filename1=maskfolderR1info(k+d).name;
+filename2=maskfolderR2info(k+d).name;
 
 %2.3 Create additional namelist for easy viewing
-data.maskname{k}=filename;
+data.maskname1{k}=filename1;
+data.maskname2{k}=filename2;
 
-%2.4 Get initial SNAP mask for each subject (performed prior to slicer segs)
-mask=niftiread(fullfile(maskfolderR1,filename));
- 
+%2.4 Get cleaned segmentation for each subject, then combine into single
+%mask (majority vote)
+mask1 = niftiread(fullfile(maskfolderR1,filename1));
+mask2 = niftiread(fullfile(maskfolderR2,filename2));
+
+mask = mask1.*mask2;
+
 %2.5 Permute
 mask=permute(mask,[2 1 3]);
 mask=flip(mask,1);
@@ -66,8 +78,38 @@ else
     disp('Resizing mask')
 end
 
-%2.9 Add to maskStacks for export
-maskStacks(:,:,1:slices,k) = mask;
+%2.9 Determine if image belongs to training or test dataset and export to
+%trainingLabels or testLabels accordingly
+
+if datasetInfo.testData(k)==1 
+
+    %Option a: Export to test labels
+
+    %Get current size
+    if exist('testLabels') == 1
+    currentSize = size(testLabels,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    testLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
+
+else
+
+    %Option b: Export to training labels
+
+    %Get current size
+    if exist('trainingLabels') == 1
+    currentSize = size(trainingLabels,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    trainingLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
+
+end
 
 %% 3. Get images
 
@@ -95,8 +137,38 @@ else
     disp('Resizing image')
 end
 
-%Add to maskStacks for export
-imageStacks(:,:,1:slices,k) = image;
+%2.10 Determine if image belongs to training or test dataset and export to
+%trainingImages or testImages accordingly
+
+if datasetInfo.testData(k)==1 
+
+    %Option a: Export to test images
+
+    %Get current size
+    if exist('testImages') == 1
+    currentSize = size(testImages,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    testImages(:,:,(currentSize+1):(currentSize+slices)) = image;
+
+else
+
+    %Option b: Export to training images
+
+    %Get current size
+    if exist('trainingImages') == 1
+    currentSize = size(trainingImages,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    trainingImages(:,:,(currentSize+1):(currentSize+slices)) = image;
+
+end
 
 
 %% Create overlay image
@@ -114,26 +186,125 @@ newanal2(overlayimage)
 else ;
 end
 
-
 end
 
 
-%% 4. Export to hdf5
+
+
+%% 4. Export to hdf5 for use in Keras
 
 %4.1 Select folder for export and set as current folder
-cd '/Users/tjb57/Dropbox/MATLAB/Segmentation/inflammationData/hdf5/';
+cd '/Users/TJB57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/hdf5/';
 
-%4.2 Create empty hdf dataset for images and masks
-h5create('imageData.h5','/imageDataSet',size(imageStacks))
-h5disp('imageData.h5')
-
-h5create('maskData.h5','/maskDataSet',size(maskStacks))
+%4.2 Create empty hdf dataset for images and labels
+h5create('trainingImages.h5','/trainingImageDataSet',size(trainingImages))
+h5create('testImages.h5','/testImageDataSet',size(testImages))
+h5create('trainingLabels.h5','/trainingLabelsDataSet',size(trainingLabels))
+h5create('testLabels.h5','/testLabelsDataSet',size(testLabels))
 
 %4.3 Add image data to hdf dataset
-h5write('imageData.h5','/imageDataSet',imageStacks)
+h5write('trainingImages.h5','/trainingImageDataSet',trainingImages)
+h5write('testImages.h5','/testImageDataSet',testImages)
+h5write('trainingLabels.h5','/trainingLabelsDataSet',trainingLabels)
+h5write('testLabels.h5','/testLabelsDataSet',testLabels)
 
-h5write('maskData.h5','/maskDataSet',maskStacks)
+% display contents of example
+h5disp('trainingImages.h5')
 
 %4.4 Read data from hdf5
-imageCheck = h5read('imageData.h5','/imageDataSet');
-maskCheck = h5read('maskData.h5','/maskDataSet');
+trainingImageCheck = h5read('trainingImages.h5','/trainingImageDataSet');
+testImageCheck = h5read('testImages.h5','/testImageDataSet');
+trainingLabelCheck = h5read('trainingLabels.h5','/trainingLabelsDataSet');
+testLabelCheck = h5read('testLabels.h5','/testLabelsDataSet');
+
+
+%Choose slice in combined stack to view training data with labels
+newanal2(trainingImageCheck)
+sl = 578;
+
+figure
+subplot(1,2,1)
+imshow(trainingImageCheck(:,:,sl),[])
+subplot(1,2,2)
+imshow(trainingLabelCheck(:,:,sl),[])
+
+%Choose slice in combined stack to view test data with labels
+newanal2(testImageCheck)
+sl = 61;
+
+figure
+subplot(1,2,1)
+imshow(testImageCheck(:,:,sl),[])
+subplot(1,2,2)
+imshow(testLabelCheck(:,:,sl),[])
+
+%% 5. Create label datastores for MATLAB use
+
+%5.1 Select folder for splitting of training data images
+imageDir = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/png/trainingDataImages'
+cd(imageDir)
+
+for k=1:size(trainingImages,3)
+    image=trainingImages(:,:,k);
+    imwrite(image,strcat('trainingDataImage',num2str(k),'.png'));
+    [1,k]
+end
+
+% Create an imageDatastore object to store the training images.
+imds = imageDatastore(imageDir);
+
+%5.2 Select folder for splitting of training data images
+labelDir = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/png/trainingDataLabels'
+cd(labelDir)
+
+for k=1:size(trainingLabels,3)
+    image=uint8(trainingLabels(:,:,k));
+    imwrite(image,strcat('trainingDataLabels',num2str(k),'.png'));
+    [2,k]
+end
+
+% Define the class names and their associated label IDs.
+classNames = ["inflammation", "background"];
+labelIDs   = [1 0]; %Use 255 as 1s correspond to 255 in jpg files
+
+% Create a labelDatastore object to store the training images.
+labelds = pixelLabelDatastore(labelDir,classNames,labelIDs);
+
+%Combine labels and images into a single data store
+trainingDS = combine(imds,labelds);
+
+%5.3 Select folder for splitting of training data images
+imageDir = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/png/testDataImages'
+cd(imageDir)
+
+for k=1:size(testImages,3)
+    image=testImages(:,:,k);
+    imwrite(image,strcat('testDataImage',num2str(k),'.png'));
+    [3,k]
+end
+
+% Create an imageDatastore object to store the training images.
+testImds = imageDatastore(imageDir);
+
+%5.4 Select folder for splitting of training data label
+labelDir = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/png/testDataLabels'
+cd(labelDir)
+
+for k=1:size(testLabels,3)
+    image=uint8(testLabels(:,:,k));
+    imwrite(image,strcat('testDataLabels',num2str(k),'.png'));
+    [4,k]
+end
+
+% Define the class names and their associated label IDs.
+classNames = ["inflammation", "background"];
+labelIDs   = [1 0]; %Use 255 as 1s correspond to 255 in jpg files
+
+% Create a labelDatastore object to store the training images.
+testLabelds = pixelLabelDatastore(labelDir,classNames,labelIDs);
+
+%Combine labels and images into a single data store
+testDS = combine(testImds,testLabelds);
+
+
+
