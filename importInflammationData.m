@@ -95,6 +95,9 @@ if datasetInfo.testData(k)==1
     %Add to stack
     testLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
 
+    %Update id labels
+    idLabels.test((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
+    treatmentLabels.test((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
 else
 
     %Option b: Export to training labels
@@ -108,6 +111,10 @@ else
 
     %Add to stack
     trainingLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
+    
+    %Update id labels accordingly
+    idLabels.training((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
+    treatmentLabels.training((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
 
 end
 
@@ -237,6 +244,24 @@ subplot(1,2,1)
 imshow(testImageCheck(:,:,sl),[])
 subplot(1,2,2)
 imshow(testLabelCheck(:,:,sl),[])
+
+%4.5 Create id and treatment labels
+%id
+h5create('idLabelsTraining.h5','/idLabels',size(idLabels.training))
+h5create('idLabelsTest.h5','/idLabels',size(idLabels.test))
+
+h5write('idLabelsTraining.h5','/idLabels',idLabels.training)
+h5write('idLabelsTest.h5','/idLabels',idLabels.test)
+
+%treatment
+h5create('treatmentLabelsTraining.h5','/treatmentLabels',size(treatmentLabels.training))
+h5create('treatmentLabelsTest.h5','/treatmentLabels',size(treatmentLabels.test))
+
+h5write('treatmentLabelsTraining.h5','/treatmentLabels',treatmentLabels.training)
+h5write('treatmentLabelsTest.h5','/treatmentLabels',treatmentLabels.test)
+
+
+
 
 %% 5. Create label datastores for MATLAB use
 
