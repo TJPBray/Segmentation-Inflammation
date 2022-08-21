@@ -12,14 +12,36 @@
 %     'RandRotation',[0,0])
 
 imageAugmenter = imageDataAugmenter( ...
-    'RandRotation',[-20,20], ...
-    'RandXTranslation',[-3 3], ...
-    'RandYTranslation',[-3 3])
+    'RandRotation',[-10,10], ...
+    'RandXTranslation',[-30 30], ...
+    'RandYTranslation',[-30 30])
 
-%5.2 Perform data augmentation for combined data store
+
+% % %5.2 Perform data augmentation for combined data store
+% auTrainingDS = transform(trainingDS,@classificationAugmentationPipeline, ...
+%     IncludeInfo=true);
+% 
+% %Also apply to imds in isolation to allow preview
+% auTrainingDsPreview = transform(imds,@classificationAugmentationPipeline, ...
+%     IncludeInfo=true);
+
 auTrainingDS = transform(trainingDS, @(data)augment(imageAugmenter,data));
 
+auTrainingDS2 = transform(trainingDS,@segmentationAugmentationPipeline);
+
 %5.3 Preview augmentation
+figure
+subplot(1,3,1)
+prev=preview(trainingDS);
+montage(prev{1},'DisplayRange',[])
+
+subplot(1,3,2)
+prev2=preview(auTrainingDS);
+montage(prev2{1},'DisplayRange',[])
+
+subplot(1,3,3)
+prev3=preview(auTrainingDS2);
+montage(prev3{1},'DisplayRange',[0 0.5])
 
 
 %% 6. Create the U-Net
