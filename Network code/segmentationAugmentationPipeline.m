@@ -21,7 +21,7 @@ targetImage=dataIn{idx,2};
     inputImage = double(inputImage) / double(max(inputImage,[],'all'));
 
     % Imadjust
-    inputImage=imadjust(inputImage,[0 0.5])
+    inputImage=imadjust(inputImage,[0 0.5]);
 
     % Add randomized rotation and scale
     tform = randomAffine2d(Scale=[0.9,1.1],Rotation=[-30 30]);

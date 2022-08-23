@@ -32,6 +32,9 @@ maxSlices = 25;
 %Load dataset info (which are training, test etc)
 load datasetInfo.mat
 
+%Modify to get partition labels
+datasetInfo = setPartition(datasetInfo);
+
 %% 2. Get masks
 
 %Prefill arrays
@@ -81,25 +84,8 @@ end
 %2.9 Determine if image belongs to training or test dataset and export to
 %trainingLabels or testLabels accordingly
 
-if datasetInfo.testData(k)==1 
-
-    %Option a: Export to test labels
-
-    %Get current size
-    if exist('testLabels') == 1
-    currentSize = size(testLabels,3);
-    else
-    currentSize = 0;
-    end
-
-    %Add to stack
-    testLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
-
-    %Update id labels
-    idLabels.test((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
-    treatmentLabels.test((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
-else
-
+if datasetInfo.partitionLabel(k)==1 
+    
     %Option b: Export to training labels
 
     %Get current size
@@ -112,9 +98,48 @@ else
     %Add to stack
     trainingLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
     
-    %Update id labels accordingly
-    idLabels.training((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
-    treatmentLabels.training((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
+%     %Update id labels accordingly
+%     idLabels.training((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
+%     treatmentLabels.training((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
+
+elseif datasetInfo.partitionLabel(k)==2 
+    
+    %Option b: Export to training labels
+
+    %Get current size
+    if exist('validationLabels') == 1
+    currentSize = size(validationLabels,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    validationLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
+    
+%     %Update id labels accordingly
+%     idLabels.validation((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
+%     treatmentLabels.validation((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
+
+elseif datasetInfo.partitionLabel(k)==3
+    
+    %Option a: Export to test labels
+
+    %Get current size
+    if exist('testLabels') == 1
+    currentSize = size(testLabels,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    testLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
+
+%     %Update id labels
+%     idLabels.test((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
+%     treatmentLabels.test((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
+
+else 
+    error('Problem with assigning labels to stack')
 
 end
 
@@ -149,23 +174,9 @@ end
 %2.10 Determine if image belongs to training or test dataset and export to
 %trainingImages or testImages accordingly
 
-if datasetInfo.testData(k)==1 
+if datasetInfo.partitionLabel(k)==1 
 
-    %Option a: Export to test images
-
-    %Get current size
-    if exist('testImages') == 1
-    currentSize = size(testImages,3);
-    else
-    currentSize = 0;
-    end
-
-    %Add to stack
-    testImages(:,:,(currentSize+1):(currentSize+slices)) = image;
-
-else
-
-    %Option b: Export to training images
+    %Option a: Export to training images
 
     %Get current size
     if exist('trainingImages') == 1
@@ -177,8 +188,37 @@ else
     %Add to stack
     trainingImages(:,:,(currentSize+1):(currentSize+slices)) = image;
 
-end
+elseif datasetInfo.partitionLabel(k)==2 
 
+    %Option b: Export to validation images
+
+    %Get current size
+    if exist('validationImages') == 1
+    currentSize = size(validationImages,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    validationImages(:,:,(currentSize+1):(currentSize+slices)) = image;
+
+elseif datasetInfo.partitionLabel(k)==3 
+
+    %Option c: Export to test images
+
+    %Get current size
+    if exist('testImages') == 1
+    currentSize = size(testImages,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    testImages(:,:,(currentSize+1):(currentSize+slices)) = image;
+
+else error('Problem with assigning images to stack')
+
+end
 
 %% Create overlay image
 
