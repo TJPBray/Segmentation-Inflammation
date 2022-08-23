@@ -7,9 +7,9 @@ clear all
 %% 1. Specify folders 
 
 %
-maskfolderR1 = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/nifti/MasksTJPB';
-maskfolderR2 = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/nifti/MasksMHC';
-imagefolder = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/nifti/STIR images';
+maskfolderR1 = '/scratch0/NOT_BACKED_UP/timbray/inflammationData/TJPB Cleaned Inflammation';
+maskfolderR2 = '/scratch0/NOT_BACKED_UP/timbray/inflammationData/MHC Cleaned Segmentation';
+imagefolder = '/scratch0/NOT_BACKED_UP/timbray/inflammationData/STIR images';
 
 %Get folder info
 maskfolderR1info=dir(maskfolderR1);
@@ -24,7 +24,7 @@ numFiles = (numel(maskfolderR1info)-d);
 
 %Image size for dataset (note that a minority of datasets may need to be
 %adjusted to fit this)
-imageSize = 336;
+imageSize = 320;
 
 %Specify max number of slices
 maxSlices = 25;
@@ -136,6 +136,8 @@ image=flip(image,1);
 %Convert image to uint16
 image=uint16(image);
 
+
+
 %2.9 Check image is correct size, else resize
 if size(image,3)==imageSize
     ;
@@ -198,75 +200,73 @@ end
 
 
 
-%% 4. Export to hdf5 for use in Keras
-
-%4.1 Select folder for export and set as current folder
-cd '/Users/TJB57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/hdf5/';
-
-%4.2 Create empty hdf dataset for images and labels
-h5create('trainingImages.h5','/trainingImageDataSet',size(trainingImages))
-h5create('testImages.h5','/testImageDataSet',size(testImages))
-h5create('trainingLabels.h5','/trainingLabelsDataSet',size(trainingLabels))
-h5create('testLabels.h5','/testLabelsDataSet',size(testLabels))
-
-%4.3 Add image data to hdf dataset
-h5write('trainingImages.h5','/trainingImageDataSet',trainingImages)
-h5write('testImages.h5','/testImageDataSet',testImages)
-h5write('trainingLabels.h5','/trainingLabelsDataSet',trainingLabels)
-h5write('testLabels.h5','/testLabelsDataSet',testLabels)
-
-% display contents of example
-h5disp('trainingImages.h5')
-
-%4.4 Read data from hdf5
-trainingImageCheck = h5read('trainingImages.h5','/trainingImageDataSet');
-testImageCheck = h5read('testImages.h5','/testImageDataSet');
-trainingLabelCheck = h5read('trainingLabels.h5','/trainingLabelsDataSet');
-testLabelCheck = h5read('testLabels.h5','/testLabelsDataSet');
-
-
-%Choose slice in combined stack to view training data with labels
-newanal2(trainingImageCheck)
-sl = 578;
-
-figure
-subplot(1,2,1)
-imshow(trainingImageCheck(:,:,sl),[])
-subplot(1,2,2)
-imshow(trainingLabelCheck(:,:,sl),[])
-
-%Choose slice in combined stack to view test data with labels
-newanal2(testImageCheck)
-sl = 61;
-
-figure
-subplot(1,2,1)
-imshow(testImageCheck(:,:,sl),[])
-subplot(1,2,2)
-imshow(testLabelCheck(:,:,sl),[])
-
-%4.5 Create id and treatment labels
-%id
-h5create('idLabelsTraining.h5','/idLabels',size(idLabels.training))
-h5create('idLabelsTest.h5','/idLabels',size(idLabels.test))
-
-h5write('idLabelsTraining.h5','/idLabels',idLabels.training)
-h5write('idLabelsTest.h5','/idLabels',idLabels.test)
-
-%treatment
-h5create('treatmentLabelsTraining.h5','/treatmentLabels',size(treatmentLabels.training))
-h5create('treatmentLabelsTest.h5','/treatmentLabels',size(treatmentLabels.test))
-
-h5write('treatmentLabelsTraining.h5','/treatmentLabels',treatmentLabels.training)
-h5write('treatmentLabelsTest.h5','/treatmentLabels',treatmentLabels.test)
-
-
+% %% 4. Export to hdf5 for use in Keras
+% 
+% %4.1 Select folder for export and set as current folder
+% cd '/Users/TJB57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/hdf5/';
+% 
+% %4.2 Create empty hdf dataset for images and labels
+% h5create('trainingImages.h5','/trainingImageDataSet',size(trainingImages))
+% h5create('testImages.h5','/testImageDataSet',size(testImages))
+% h5create('trainingLabels.h5','/trainingLabelsDataSet',size(trainingLabels))
+% h5create('testLabels.h5','/testLabelsDataSet',size(testLabels))
+% 
+% %4.3 Add image data to hdf dataset
+% h5write('trainingImages.h5','/trainingImageDataSet',trainingImages)
+% h5write('testImages.h5','/testImageDataSet',testImages)
+% h5write('trainingLabels.h5','/trainingLabelsDataSet',trainingLabels)
+% h5write('testLabels.h5','/testLabelsDataSet',testLabels)
+% 
+% % display contents of example
+% h5disp('trainingImages.h5')
+% 
+% %4.4 Read data from hdf5
+% trainingImageCheck = h5read('trainingImages.h5','/trainingImageDataSet');
+% testImageCheck = h5read('testImages.h5','/testImageDataSet');
+% trainingLabelCheck = h5read('trainingLabels.h5','/trainingLabelsDataSet');
+% testLabelCheck = h5read('testLabels.h5','/testLabelsDataSet');
+% 
+% 
+% %Choose slice in combined stack to view training data with labels
+% newanal2(trainingImageCheck)
+% sl = 578;
+% 
+% figure
+% subplot(1,2,1)
+% imshow(trainingImageCheck(:,:,sl),[])
+% subplot(1,2,2)
+% imshow(trainingLabelCheck(:,:,sl),[])
+% 
+% %Choose slice in combined stack to view test data with labels
+% newanal2(testImageCheck)
+% sl = 61;
+% 
+% figure
+% subplot(1,2,1)
+% imshow(testImageCheck(:,:,sl),[])
+% subplot(1,2,2)
+% imshow(testLabelCheck(:,:,sl),[])
+% 
+% %4.5 Create id and treatment labels
+% %id
+% h5create('idLabelsTraining.h5','/idLabels',size(idLabels.training))
+% h5create('idLabelsTest.h5','/idLabels',size(idLabels.test))
+% 
+% h5write('idLabelsTraining.h5','/idLabels',idLabels.training)
+% h5write('idLabelsTest.h5','/idLabels',idLabels.test)
+% 
+% %treatment
+% h5create('treatmentLabelsTraining.h5','/treatmentLabels',size(treatmentLabels.training))
+% h5create('treatmentLabelsTest.h5','/treatmentLabels',size(treatmentLabels.test))
+% 
+% h5write('treatmentLabelsTraining.h5','/treatmentLabels',treatmentLabels.training)
+% h5write('treatmentLabelsTest.h5','/treatmentLabels',treatmentLabels.test)
 
 
 %% 5. Create label datastores for MATLAB use
 
 %5.1 Select folder for splitting of training data images
-imageDir = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/png/trainingDataImages'
+imageDir = '/scratch0/NOT_BACKED_UP/timbray/inflammationData/Datastores/trainingDataImages'
 cd(imageDir)
 
 for k=1:size(trainingImages,3)
@@ -279,7 +279,7 @@ end
 imds = imageDatastore(imageDir);
 
 %5.2 Select folder for splitting of training data images
-labelDir = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/png/trainingDataLabels'
+labelDir = '/scratch0/NOT_BACKED_UP/timbray/inflammationData/Datastores/trainingDataLabels'
 cd(labelDir)
 
 for k=1:size(trainingLabels,3)
@@ -290,7 +290,7 @@ end
 
 % Define the class names and their associated label IDs.
 classNames = ["inflammation", "background"];
-labelIDs   = [1 0]; %Use 255 as 1s correspond to 255 in jpg files
+labelIDs   = [255 0]; %Use 255 as 1s correspond to 255 in jpg files
 
 % Create a labelDatastore object to store the training images.
 labelds = pixelLabelDatastore(labelDir,classNames,labelIDs);
@@ -298,8 +298,8 @@ labelds = pixelLabelDatastore(labelDir,classNames,labelIDs);
 %Combine labels and images into a single data store
 trainingDS = combine(imds,labelds);
 
-%5.3 Select folder for splitting of training data images
-imageDir = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/png/testDataImages'
+%5.3 Select folder for splitting of test data images
+imageDir = '/scratch0/NOT_BACKED_UP/timbray/inflammationData/Datastores/testDataImages'
 cd(imageDir)
 
 for k=1:size(testImages,3)
@@ -311,8 +311,8 @@ end
 % Create an imageDatastore object to store the training images.
 testImds = imageDatastore(imageDir);
 
-%5.4 Select folder for splitting of training data label
-labelDir = '/Users/tjb57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/png/testDataLabels'
+%5.4 Select folder for splitting of test data labels
+labelDir = '/scratch0/NOT_BACKED_UP/timbray/inflammationData/Datastores/testDataLabels'
 cd(labelDir)
 
 for k=1:size(testLabels,3)
@@ -323,7 +323,7 @@ end
 
 % Define the class names and their associated label IDs.
 classNames = ["inflammation", "background"];
-labelIDs   = [1 0]; %Use 255 as 1s correspond to 255 in jpg files
+labelIDs   = [255 0]; %Use 255 as 1s correspond to 255 in jpg files
 
 % Create a labelDatastore object to store the training images.
 testLabelds = pixelLabelDatastore(labelDir,classNames,labelIDs);
