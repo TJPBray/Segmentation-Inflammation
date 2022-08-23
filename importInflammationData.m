@@ -32,6 +32,9 @@ maxSlices = 25;
 %Load dataset info (which are training, test etc)
 load datasetInfo.mat
 
+%Modify to get partition labels
+datasetInfo = setPartition(datasetInfo);
+
 %% 2. Get masks
 
 %Prefill arrays
@@ -81,25 +84,8 @@ end
 %2.9 Determine if image belongs to training or test dataset and export to
 %trainingLabels or testLabels accordingly
 
-if datasetInfo.testData(k)==1 
-
-    %Option a: Export to test labels
-
-    %Get current size
-    if exist('testLabels') == 1
-    currentSize = size(testLabels,3);
-    else
-    currentSize = 0;
-    end
-
-    %Add to stack
-    testLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
-
-    %Update id labels
-    idLabels.test((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
-    treatmentLabels.test((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
-else
-
+if datasetInfo.partitionLabel(k)==1 
+    
     %Option b: Export to training labels
 
     %Get current size
@@ -112,9 +98,48 @@ else
     %Add to stack
     trainingLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
     
-    %Update id labels accordingly
-    idLabels.training((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
-    treatmentLabels.training((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
+%     %Update id labels accordingly
+%     idLabels.training((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
+%     treatmentLabels.training((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
+
+elseif datasetInfo.partitionLabel(k)==2 
+    
+    %Option b: Export to training labels
+
+    %Get current size
+    if exist('validationLabels') == 1
+    currentSize = size(validationLabels,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    validationLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
+    
+%     %Update id labels accordingly
+%     idLabels.validation((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
+%     treatmentLabels.validation((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
+
+elseif datasetInfo.partitionLabel(k)==3
+    
+    %Option a: Export to test labels
+
+    %Get current size
+    if exist('testLabels') == 1
+    currentSize = size(testLabels,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    testLabels(:,:,(currentSize+1):(currentSize+slices)) = mask;
+
+%     %Update id labels
+%     idLabels.test((currentSize+1):(currentSize+slices),1)= datasetInfo.id(k);
+%     treatmentLabels.test((currentSize+1):(currentSize+slices),1)= datasetInfo.treatment(k);
+
+else 
+    error('Problem with assigning labels to stack')
 
 end
 
@@ -147,23 +172,9 @@ end
 %2.10 Determine if image belongs to training or test dataset and export to
 %trainingImages or testImages accordingly
 
-if datasetInfo.testData(k)==1 
+if datasetInfo.partitionLabel(k)==1 
 
-    %Option a: Export to test images
-
-    %Get current size
-    if exist('testImages') == 1
-    currentSize = size(testImages,3);
-    else
-    currentSize = 0;
-    end
-
-    %Add to stack
-    testImages(:,:,(currentSize+1):(currentSize+slices)) = image;
-
-else
-
-    %Option b: Export to training images
+    %Option a: Export to training images
 
     %Get current size
     if exist('trainingImages') == 1
@@ -175,8 +186,37 @@ else
     %Add to stack
     trainingImages(:,:,(currentSize+1):(currentSize+slices)) = image;
 
-end
+elseif datasetInfo.partitionLabel(k)==2 
 
+    %Option b: Export to validation images
+
+    %Get current size
+    if exist('validationImages') == 1
+    currentSize = size(validationImages,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    validationImages(:,:,(currentSize+1):(currentSize+slices)) = image;
+
+elseif datasetInfo.partitionLabel(k)==3 
+
+    %Option c: Export to test images
+
+    %Get current size
+    if exist('testImages') == 1
+    currentSize = size(testImages,3);
+    else
+    currentSize = 0;
+    end
+
+    %Add to stack
+    testImages(:,:,(currentSize+1):(currentSize+slices)) = image;
+
+else error('Problem with assigning images to stack')
+
+end
 
 %% Create overlay image
 
@@ -198,68 +238,77 @@ end
 
 
 
-%% 4. Export to hdf5 for use in Keras
-
-%4.1 Select folder for export and set as current folder
-cd '/Users/TJB57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/hdf5/';
-
-%4.2 Create empty hdf dataset for images and labels
-h5create('trainingImages.h5','/trainingImageDataSet',size(trainingImages))
-h5create('testImages.h5','/testImageDataSet',size(testImages))
-h5create('trainingLabels.h5','/trainingLabelsDataSet',size(trainingLabels))
-h5create('testLabels.h5','/testLabelsDataSet',size(testLabels))
-
-%4.3 Add image data to hdf dataset
-h5write('trainingImages.h5','/trainingImageDataSet',trainingImages)
-h5write('testImages.h5','/testImageDataSet',testImages)
-h5write('trainingLabels.h5','/trainingLabelsDataSet',trainingLabels)
-h5write('testLabels.h5','/testLabelsDataSet',testLabels)
-
-% display contents of example
-h5disp('trainingImages.h5')
-
-%4.4 Read data from hdf5
-trainingImageCheck = h5read('trainingImages.h5','/trainingImageDataSet');
-testImageCheck = h5read('testImages.h5','/testImageDataSet');
-trainingLabelCheck = h5read('trainingLabels.h5','/trainingLabelsDataSet');
-testLabelCheck = h5read('testLabels.h5','/testLabelsDataSet');
-
-
-%Choose slice in combined stack to view training data with labels
-newanal2(trainingImageCheck)
-sl = 578;
-
-figure
-subplot(1,2,1)
-imshow(trainingImageCheck(:,:,sl),[])
-subplot(1,2,2)
-imshow(trainingLabelCheck(:,:,sl),[])
-
-%Choose slice in combined stack to view test data with labels
-newanal2(testImageCheck)
-sl = 61;
-
-figure
-subplot(1,2,1)
-imshow(testImageCheck(:,:,sl),[])
-subplot(1,2,2)
-imshow(testLabelCheck(:,:,sl),[])
-
-%4.5 Create id and treatment labels
-%id
-h5create('idLabelsTraining.h5','/idLabels',size(idLabels.training))
-h5create('idLabelsTest.h5','/idLabels',size(idLabels.test))
-
-h5write('idLabelsTraining.h5','/idLabels',idLabels.training)
-h5write('idLabelsTest.h5','/idLabels',idLabels.test)
-
-%treatment
-h5create('treatmentLabelsTraining.h5','/treatmentLabels',size(treatmentLabels.training))
-h5create('treatmentLabelsTest.h5','/treatmentLabels',size(treatmentLabels.test))
-
-h5write('treatmentLabelsTraining.h5','/treatmentLabels',treatmentLabels.training)
-h5write('treatmentLabelsTest.h5','/treatmentLabels',treatmentLabels.test)
-
+% %% 4. Export to hdf5 for use in Keras
+% 
+% %4.1 Select folder for export and set as current folder
+% cd '/Users/TJB57/Dropbox/MATLAB/Segmentation Inflammation/inflammationData/hdf5/';
+% 
+% %4.2 Create empty hdf dataset for images and labels
+% h5create('trainingImages.h5','/trainingImageDataSet',size(trainingImages))
+% h5create('validationImages.h5','/validationImageDataSet',size(validationImages))
+% h5create('testImages.h5','/testImageDataSet',size(testImages))
+% 
+% h5create('trainingLabels.h5','/trainingLabelsDataSet',size(trainingLabels))
+% h5create('validationLabels.h5','/validationLabelsDataSet',size(validationLabels))
+% h5create('testLabels.h5','/testLabelsDataSet',size(testLabels))
+% 
+% 
+% %4.3 Add image data to hdf dataset
+% h5write('trainingImages.h5','/trainingImageDataSet',trainingImages)
+% h5write('validationImages.h5','/validationImageDataSet',validationImages)
+% h5write('testImages.h5','/testImageDataSet',testImages)
+% 
+% h5write('trainingLabels.h5','/trainingLabelsDataSet',trainingLabels)
+% h5write('validationLabels.h5','/validationLabelsDataSet',validationLabels)
+% h5write('testLabels.h5','/testLabelsDataSet',testLabels)
+% 
+% % display contents of example
+% h5disp('trainingImages.h5')
+% 
+% %4.4 Read data from hdf5
+% trainingImageCheck = h5read('trainingImages.h5','/trainingImageDataSet');
+% validationImageCheck = h5read('validationImages.h5','/validationImageDataSet');
+% testImageCheck = h5read('testImages.h5','/testImageDataSet');
+% 
+% trainingLabelCheck = h5read('trainingLabels.h5','/trainingLabelsDataSet');
+% validationLabelCheck = h5read('validationLabels.h5','/validationLabelsDataSet');
+% testLabelCheck = h5read('testLabels.h5','/testLabelsDataSet');
+% 
+% %Choose slice in combined stack to view training data with labels
+% newanal2(trainingImageCheck)
+% sl = 578;
+% 
+% figure
+% subplot(1,2,1)
+% imshow(trainingImageCheck(:,:,sl),[])
+% subplot(1,2,2)
+% imshow(trainingLabelCheck(:,:,sl),[])
+% 
+% %Choose slice in combined stack to view test data with labels
+% newanal2(testImageCheck)
+% sl = 61;
+% 
+% figure
+% subplot(1,2,1)
+% imshow(testImageCheck(:,:,sl),[])
+% subplot(1,2,2)
+% imshow(testLabelCheck(:,:,sl),[])
+% 
+% % %4.5 Create id and treatment labels
+% % %id
+% % h5create('idLabelsTraining.h5','/idLabels',size(idLabels.training))
+% % h5create('idLabelsTest.h5','/idLabels',size(idLabels.test))
+% % 
+% % h5write('idLabelsTraining.h5','/idLabels',idLabels.training)
+% % h5write('idLabelsTest.h5','/idLabels',idLabels.test)
+% % 
+% % %treatment
+% % h5create('treatmentLabelsTraining.h5','/treatmentLabels',size(treatmentLabels.training))
+% % h5create('treatmentLabelsTest.h5','/treatmentLabels',size(treatmentLabels.test))
+% % 
+% % h5write('treatmentLabelsTraining.h5','/treatmentLabels',treatmentLabels.training)
+% % h5write('treatmentLabelsTest.h5','/treatmentLabels',treatmentLabels.test)
+% 
 
 
 
