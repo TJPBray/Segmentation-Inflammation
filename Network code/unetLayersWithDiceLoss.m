@@ -204,7 +204,7 @@ convFilterSize = args.FilterSize;
 convolutionPadding = args.ConvolutionPadding;
 
 % Create image input layer with default parameters.
-inputlayer = imageInputLayer(inputTileSize,'Name','ImageInputLayer');
+inputlayer = imageInputLayer(inputTileSize,'Name','ImageInputLayer', 'Normalization','none');
 
 % Create encoder sub-network from given input parameters.
 [encoder, finalNumChannels] = iCreateEncoder(encoderDepth, ...
