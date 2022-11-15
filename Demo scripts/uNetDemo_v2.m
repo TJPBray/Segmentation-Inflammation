@@ -84,7 +84,7 @@ options = trainingOptions('sgdm', ...
     'VerboseFrequency',10);
 
 %3.2 Train the network
-net = trainNetwork(auds,lgraph,options)
+net = trainNetwork(ds,lgraph,options)
 
 %% 4. Use the trained network to predict outputs for imds (note not independent test set for this toy example) 
 

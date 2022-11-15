@@ -148,6 +148,8 @@ options = trainingOptions('sgdm', ...
 %7.2 Train the network on the  dataset
 net = trainNetwork(auds,lgraph,options)
 
+
+
 %% 8. Predict
 
 %8.1 Get prediction
